@@ -1,5 +1,10 @@
-#include <THC/THCAtomics.cuh>
+#include <ATen/ATen.h>
+//#include <THC/THCAtomics.cuh>
+#include <ATen/cuda/CUDAContext.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
 #include <vector>
 
 #include "cuda_utils.h"
@@ -25,7 +30,7 @@ __global__ void gather_points_kernel_fast(int b, int c, int n, int m,
 }
 
 void gather_points_kernel_launcher_fast(int b, int c, int n, int npoints,
-    const float *points, const int *idx, float *out, at::cuda::CUDAStream stream) {
+    const float *points, const int *idx, float *out, cudaStream_t stream) {
     // points: (B, C, N)
     // idx: (B, npoints)
     // output:
@@ -64,7 +69,7 @@ __global__ void gather_points_grad_kernel_fast(int b, int c, int n, int m, const
 }
 
 void gather_points_grad_kernel_launcher_fast(int b, int c, int n, int npoints,
-    const float *grad_out, const int *idx, float *grad_points, at::cuda::CUDAStream stream) {
+    const float *grad_out, const int *idx, float *grad_points, cudaStream_t stream) {
     // grad_out: (B, C, npoints)
     // idx: (B, npoints)
     // output:
@@ -377,7 +382,7 @@ __global__ void ball_query_kernel_fast(int b, int n, int m, float radius, int ns
 
 
 void ball_query_kernel_launcher_fast(int b, int n, int m, float radius, int nsample, \
-    const float *new_xyz, const float *xyz, int *idx, at::cuda::CUDAStream stream) {
+    const float *new_xyz, const float *xyz, int *idx, cudaStream_t stream) {
     // new_xyz: (B, M, 3)
     // xyz: (B, N, 3)
     // output:
@@ -429,7 +434,7 @@ void ball_query_kernel_launcher_fast(int b, int n, int m, float radius, int nsam
 
 // at::Tensor ball_query_cuda_forward(float radius, int nsample, at::Tensor query,
 //                                   at::Tensor xyz, at::Tensor idx) {
-//   at::cuda::CUDAStream stream = at::cuda::getCurrentCUDAStream();
+//   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 //   const int b = xyz.size(0);
 //   const int n = xyz.size(1);
 //   const int m = query.size(1);
@@ -469,7 +474,7 @@ __global__ void group_points_kernel(int b, int c, int n, int npoints,
 void group_points_kernel_wrapper(int b, int c, int n, int npoints, int nsample,
                                  const float *points, const int *idx,
                                  float *out) {
-  at::cuda::CUDAStream stream = at::cuda::getCurrentCUDAStream();
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   group_points_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
       b, c, n, npoints, nsample, points, idx, out);
@@ -505,7 +510,7 @@ __global__ void group_points_grad_kernel(int b, int c, int n, int npoints,
 void group_points_grad_kernel_wrapper(int b, int c, int n, int npoints,
                                       int nsample, const float *grad_out,
                                       const int *idx, float *grad_points) {
-  at::cuda::CUDAStream stream = at::cuda::getCurrentCUDAStream();
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   group_points_grad_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
       b, c, n, npoints, nsample, grad_out, idx, grad_points);
